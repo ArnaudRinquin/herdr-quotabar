@@ -1,6 +1,6 @@
 # herdr-quota
 
-AI plan quotas in the [Herdr](https://herdr.dev) tab bar, Vibe-Island style:
+AI plan quotas in the [Herdr](https://herdr.dev) tab bar, one compact line:
 
 ```
 5h 28% 1h6m | 7d 17% 3d22h | Fable 20% 3d22h

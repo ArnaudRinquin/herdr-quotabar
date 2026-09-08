@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""herdr-quota — AI plan quotas in the Herdr tab bar, Vibe-Island style.
+"""herdr-quota — AI plan quotas in the Herdr tab bar, one compact line.
 
   5h 28% 1h6m | 7d 17% 3d22h | Fable 20% 3d22h
 
