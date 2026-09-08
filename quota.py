@@ -153,22 +153,30 @@ def ensure_quota_workspace(workspaces):
     return target
 
 
-def publish(workspace_id, toks):
-    args = ["workspace", "report-metadata", workspace_id, "--source", SOURCE, "--ttl-ms", str(TTL_MS)]
-    for k, v in toks.items():
-        args += ["--token", f"{k}={v}"]
-    for i in range(len([k for k in toks if k.endswith("_pct")]) + 1, MAX_WINDOWS + 1):
-        for suffix in ("label", "pct", "reset"):
-            args += ["--clear-token", f"q{i}_{suffix}"]
-    herdr_cli(*args)
+MAX_PROPS = 16  # server-side cap per report_metadata call
+
+
+def publish(workspace_id, toks, previous=None):
+    """Set toks; clear only names that were set last time and are gone now. Chunked under MAX_PROPS."""
+    props = dict(toks)
+    for k in (previous or {}):
+        if k not in toks:
+            props[k] = None
+    items = list(props.items())
+    for i in range(0, len(items), MAX_PROPS):
+        args = ["workspace", "report-metadata", workspace_id, "--source", SOURCE, "--ttl-ms", str(TTL_MS)]
+        for k, v in items[i:i + MAX_PROPS]:
+            args += ["--clear-token", k] if v is None else ["--token", f"{k}={v}"]
+        herdr_cli(*args)
 
 
 def clear(workspace_id):
-    args = ["workspace", "report-metadata", workspace_id, "--source", SOURCE, "--clear-token", "q_icon"]
-    for i in range(1, MAX_WINDOWS + 1):
-        for suffix in ("label", "pct", "reset"):
-            args += ["--clear-token", f"q{i}_{suffix}"]
-    herdr_cli(*args)
+    names = ["q_icon"] + [f"q{i}_{sfx}" for i in range(1, MAX_WINDOWS + 1) for sfx in ("label", "pct", "reset")]
+    for i in range(0, len(names), MAX_PROPS):
+        args = ["workspace", "report-metadata", workspace_id, "--source", SOURCE]
+        for n in names[i:i + MAX_PROPS]:
+            args += ["--clear-token", n]
+        herdr_cli(*args)
 
 
 def running_pid():
@@ -201,7 +209,8 @@ def tick(state):
                     if w["workspace_id"] != target:
                         clear(w["workspace_id"])
                 state["target"] = target
-            publish(target, state["toks"])
+            publish(target, state["toks"], state.get("published"))
+            state["published"] = state["toks"]
     return rate_limited
 
 
