@@ -5,7 +5,7 @@
 
 Windows from every configured provider (providers/*.py) are flattened and
 published as $q{i}_label / $q{i}_pct / $q{i}_reset tokens (i = 1..MAX_WINDOWS)
-on a dedicated "Quota" mini-space pinned on top of the spaces list, plus
+on a dedicated "Quota" mini-space kept at the bottom of the spaces list, plus
 $q_icon for the provider glyph(s).
 
 Commands:
@@ -148,8 +148,8 @@ def ensure_quota_workspace(workspaces):
         target = json.loads(out.stdout)["result"]["workspace"]["workspace_id"]
         with open(WS_ID_FILE, "w") as f:
             f.write(target)
-    if not ids or ids[0] != target:
-        socket_request("workspace.move", {"workspace_id": target, "insert_index": 0})
+    if ids and ids[-1] != target:
+        socket_request("workspace.move", {"workspace_id": target, "insert_index": len(ids)})
     return target
 
 

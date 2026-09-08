@@ -3,8 +3,16 @@
 AI plan quotas in the [Herdr](https://herdr.dev) spaces sidebar, Vibe-Island style:
 
 ```
-✳ · 5h · 28% · 1h6m · 7d · 17% · 3d22h · Fable · 20% · 3d22h
+Quota
+  5h · 28% · 1h6m
+  7d · 17% · 3d22h
+  Fable · 20% · 3d22h
 ```
+
+One row per window keeps it inside the sidebar width. The rows hang off a dedicated
+**Quota** mini-space (a workspace whose cwd is the plugin state dir, so no branch/git rows)
+kept at the bottom of the spaces list — Herdr metadata tokens are per-workspace, so the
+line needs a workspace to live on.
 
 Provider-pluggable. Ships with **Claude** (the same numbers Claude Code's `/status` shows:
 5h session, 7d all-models, and every per-model weekly cap such as Fable, read from the
@@ -25,19 +33,12 @@ Add the row to `~/.config/herdr/config.toml` (Herdr ≥ 0.8.2):
 rows = [
   ["state_icon", "workspace"],
   ["branch", "git_status"],
-  [
-    { token = "$q_icon", fg = "#f38ba8" },
-    { token = "$q1_label", bold = true },
-    { token = "$q1_pct", fg = "#a6e3a1", bold = true },
-    { token = "$q1_reset", dim = true },
-    { token = "$q2_label", bold = true },
-    { token = "$q2_pct", fg = "#a6e3a1", bold = true },
-    { token = "$q2_reset", dim = true },
-    { token = "$q3_label", bold = true },
-    { token = "$q3_pct", fg = "#a6e3a1", bold = true },
-    { token = "$q3_reset", dim = true },
-  ],
+  [{ token = "$q1_label", bold = true }, { token = "$q1_pct", fg = "#a6e3a1", bold = true }, { token = "$q1_reset", dim = true }],
+  [{ token = "$q2_label", bold = true }, { token = "$q2_pct", fg = "#a6e3a1", bold = true }, { token = "$q2_reset", dim = true }],
+  [{ token = "$q3_label", bold = true }, { token = "$q3_pct", fg = "#a6e3a1", bold = true }, { token = "$q3_reset", dim = true }],
 ]
+
+Inline tables must stay on one line (TOML 1.0). Add `{ token = "$q_icon" }` to a row for a provider glyph.
 ```
 
 On Herdr ≥ 0.9.0 the `%` tokens can change color with usage (`rules` are rejected by 0.8.x):
@@ -55,8 +56,8 @@ herdr server reload-config
 herdr plugin action invoke start --plugin arnaud.quota
 ```
 
-The monitor keeps a mini-space labeled **Quota** pinned on top of the spaces list and
-publishes the tokens only there, so the line renders once. It auto-starts on
+The monitor keeps the **Quota** mini-space at the bottom of the spaces list and
+publishes the tokens only there, so the rows render once. It auto-starts on
 workspace/pane creation events and exits when the Herdr server goes away.
 
 ## Popup
