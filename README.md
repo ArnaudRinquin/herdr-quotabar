@@ -26,8 +26,8 @@ tab_bar_right = [
 ]
 ```
 
-Then `herdr server reload-config`. `status` fetches at most every 6 minutes and caches the
-result in `~/.local/state/herdr-quota/last.json`; the tab bar strips colors, so the line is
+Then `herdr server reload-config`. `status`, the popup and the sidebar daemon share one cache: at most one fetch every 5 minutes (the endpoint 429s fast), stored in
+`~/.local/state/herdr-quota/last.json`. The tab bar strips colors, so the line is
 plain text.
 
 ## Sidebar mode (optional)

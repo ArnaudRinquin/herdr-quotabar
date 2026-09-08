@@ -60,6 +60,39 @@ def collect():
     return result
 
 
+FRESH_S = 300  # one fetch per 5 min across status / popup / daemon
+
+
+def load_cached(max_age_s=FRESH_S):
+    """(cached [[provider_name, [windows]]], age_s, note). Fetches only when the cache is older than max_age_s."""
+    cached, age = None, None
+    try:
+        age = time.time() - os.path.getmtime(CACHE_FILE)
+        with open(CACHE_FILE) as f:
+            cached = json.load(f)
+    except Exception:
+        pass
+    note = ""
+    if cached is None or age > max_age_s:
+        try:
+            fresh = [(p.NAME, w) for p, w in collect()]
+            if fresh:
+                cached, age = fresh, 0
+                os.makedirs(STATE_DIR, exist_ok=True)
+                with open(CACHE_FILE, "w") as f:
+                    json.dump(cached, f)
+            elif cached is None:
+                note = "no provider logged in on this machine"
+        except RateLimited:
+            note = "rate-limited by the provider"
+            # push the mtime forward so the next callers don't hammer the endpoint
+            try:
+                os.utime(CACHE_FILE, None)
+            except OSError:
+                pass
+    return cached, age, note
+
+
 def until(iso):
     if not iso:
         return ""
@@ -280,25 +313,10 @@ def cmd_stop():
 
 
 def cmd_status():
-    """`5h 33% 48m | 7d 18% 3d21h | Fable 22% 3d21h` from the cache the daemon writes (fetches if stale)."""
-    try:
-        stale = time.time() - os.path.getmtime(CACHE_FILE) > INTERVAL_S * 3
-        with open(CACHE_FILE) as f:
-            cached = json.load(f)
-    except Exception:
-        cached, stale = None, True
-    if stale:
-        try:
-            fresh = [(p.NAME, w) for p, w in collect()]
-            if fresh:
-                cached = fresh
-                os.makedirs(STATE_DIR, exist_ok=True)
-                with open(CACHE_FILE, "w") as f:
-                    json.dump(cached, f)
-        except RateLimited:
-            pass
+    """`5h 33% 48m | 7d 18% 3d21h | Fable 22% 3d21h` for a tab-bar command entry."""
+    cached, _, note = load_cached()
     if not cached:
-        print("quota: n/a")
+        print(f"quota: {note or 'n/a'}")
         return
     parts = []
     for name, wins in cached:
@@ -327,26 +345,25 @@ def local_time(iso):
 
 
 def cmd_popup():
+    icons = {p.NAME: p.ICON for p in load_all()}
     while True:
-        try:
-            collected = collect()
-        except RateLimited:
-            collected = []
+        cached, age, note = load_cached()
         sys.stdout.write("\033[2J\033[H")
         print("\033[1m AI quotas\033[0m")
         print()
-        if not collected:
-            print("  No data. Provider not logged in on this machine, or rate-limited.")
-        for prov, wins in collected:
-            print(f"  \033[1m{prov.ICON} {prov.NAME.capitalize()}\033[0m")
+        if not cached:
+            print(f"  No data: {note or 'unknown error'}.")
+        for name, wins in cached or []:
+            print(f"  \033[1m{icons.get(name, '')} {name.capitalize()}\033[0m")
             for w in wins:
                 r = until(w.get("resets_at"))
                 print(f"    {w['label']:<8} {bar(w['pct'])}  {w['pct']:>3}%   "
                       f"resets in {r or '?'} ({local_time(w.get('resets_at'))})")
             print()
-        print("\033[2m refreshes every 30s — close the popup to exit\033[0m")
+        stamp = f"fetched {int(age // 60)}m ago" if age is not None else ""
+        print(f"\033[2m {stamp}{' — ' + note if note else ''} — refreshes every 5 min — close the popup to exit\033[0m")
         sys.stdout.flush()
-        time.sleep(30)
+        time.sleep(60)
 
 
 def main():
