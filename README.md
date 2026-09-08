@@ -14,16 +14,17 @@ already stores on the machine). No extra login.
 ## Install
 
 ```bash
-git clone https://github.com/arnaudrinquin/herdr-quota ~/projects/herdr-quota
-herdr plugin link ~/projects/herdr-quota
+herdr plugin install ArnaudRinquin/herdr-quota
+herdr plugin config-dir arnaud.quota   # prints the plugin root, used below
 ```
 
-Add a command entry to the tab bar in `~/.config/herdr/config.toml` (Herdr ≥ 0.8.2):
+Add a command entry to the tab bar in `~/.config/herdr/config.toml` (Herdr ≥ 0.8.2),
+pointing at `quota.py` inside the plugin root (or a `git clone` + `herdr plugin link <path>`):
 
 ```toml
 [ui]
 tab_bar_right = [
-  { type = "command", command = "python3 ~/projects/herdr-quota/quota.py status", interval_seconds = 60, timeout_seconds = 15 },
+  { type = "command", command = "python3 <plugin-root>/quota.py status", interval_seconds = 60, timeout_seconds = 15 },
 ]
 ```
 
