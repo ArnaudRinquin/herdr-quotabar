@@ -2,9 +2,7 @@
 
 AI plan quotas in the [Herdr](https://herdr.dev) tab bar, one compact line:
 
-```
-5h 28% 1h6m | 7d 17% 3d22h | Fable 20% 3d22h
-```
+![the Herdr tab bar showing 5h 35% 24m | 7d 18% 3d21h | Fable 22% 3d21h](docs/tab-bar.png)
 
 Provider-pluggable. Ships with **Claude** (the same numbers Claude Code's `/status` shows:
 5h session, 7d all-models, and every per-model weekly cap such as Fable, read from the
