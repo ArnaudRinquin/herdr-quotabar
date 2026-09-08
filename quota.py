@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""herdr-quota — AI plan quotas in the Herdr spaces sidebar, Vibe-Island style.
+"""herdr-quota — AI plan quotas in the Herdr tab bar, Vibe-Island style.
 
-  ✳ 5h 28% 1h6m · 7d 17% 3d22h · Fable 20% 3d22h
+  5h 28% 1h6m | 7d 17% 3d22h | Fable 20% 3d22h
 
-Windows from every configured provider (providers/*.py) are flattened and
-published as $q{i}_label / $q{i}_pct / $q{i}_reset tokens (i = 1..MAX_WINDOWS)
-on a dedicated "Quota" mini-space kept at the bottom of the spaces list, plus
-$q_icon for the provider glyph(s).
+Default mode: `status` prints that line for a ui.tab_bar_right command entry and
+caches the fetch. Optional sidebar mode: the `start` action runs a daemon that
+publishes $q{i}_label / $q{i}_pct / $q{i}_reset tokens (i = 1..MAX_WINDOWS) on a
+"Quota" mini-space at the bottom of the spaces list.
 
 Commands:
   ensure  start the background monitor if not already running (event hooks use this)
@@ -289,7 +289,12 @@ def cmd_status():
         cached, stale = None, True
     if stale:
         try:
-            cached = [(p.NAME, w) for p, w in collect()]
+            fresh = [(p.NAME, w) for p, w in collect()]
+            if fresh:
+                cached = fresh
+                os.makedirs(STATE_DIR, exist_ok=True)
+                with open(CACHE_FILE, "w") as f:
+                    json.dump(cached, f)
         except RateLimited:
             pass
     if not cached:

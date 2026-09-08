@@ -2,18 +2,18 @@ id = "arnaud.quota"
 name = "AI quota"
 version = "0.1.0"
 min_herdr_version = "0.8.0"
-description = "AI plan quotas (Claude: 5h / 7d / per-model) as a compact Vibe-Island-style line in the spaces sidebar, plus a detail popup. Provider-pluggable."
+description = "AI plan quotas (Claude: 5h / 7d / per-model) as a compact Vibe-Island-style line in the tab bar (or the spaces sidebar), plus a detail popup. Provider-pluggable."
 platforms = ["macos", "linux"]
 
 [[actions]]
 id = "start"
-title = "AI quota: start monitor"
+title = "AI quota: start sidebar monitor"
 contexts = ["workspace"]
 command = ["python3", "quota.py", "ensure"]
 
 [[actions]]
 id = "stop"
-title = "AI quota: stop monitor"
+title = "AI quota: stop sidebar monitor"
 contexts = ["workspace"]
 command = ["python3", "quota.py", "stop"]
 
@@ -23,13 +23,6 @@ title = "AI quota: refresh now"
 contexts = ["workspace"]
 command = ["python3", "quota.py", "once"]
 
-[[events]]
-on = "workspace.created"
-command = ["python3", "quota.py", "ensure"]
-
-[[events]]
-on = "pane.created"
-command = ["python3", "quota.py", "ensure"]
 
 [[panes]]
 id = "usage"

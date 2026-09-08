@@ -1,18 +1,10 @@
 # herdr-quota
 
-AI plan quotas in the [Herdr](https://herdr.dev) spaces sidebar, Vibe-Island style:
+AI plan quotas in the [Herdr](https://herdr.dev) tab bar, Vibe-Island style:
 
 ```
-Quota
-  5h · 28% · 1h6m
-  7d · 17% · 3d22h
-  Fable · 20% · 3d22h
+5h 28% 1h6m | 7d 17% 3d22h | Fable 20% 3d22h
 ```
-
-One row per window keeps it inside the sidebar width. The rows hang off a dedicated
-**Quota** mini-space (a workspace whose cwd is the plugin state dir, so no branch/git rows)
-kept at the bottom of the spaces list — Herdr metadata tokens are per-workspace, so the
-line needs a workspace to live on.
 
 Provider-pluggable. Ships with **Claude** (the same numbers Claude Code's `/status` shows:
 5h session, 7d all-models, and every per-model weekly cap such as Fable, read from the
@@ -26,7 +18,29 @@ git clone https://github.com/arnaudrinquin/herdr-quota ~/projects/herdr-quota
 herdr plugin link ~/projects/herdr-quota
 ```
 
-Add the row to `~/.config/herdr/config.toml` (Herdr ≥ 0.8.2):
+Add a command entry to the tab bar in `~/.config/herdr/config.toml` (Herdr ≥ 0.8.2):
+
+```toml
+[ui]
+tab_bar_right = [
+  { type = "command", command = "python3 ~/projects/herdr-quota/quota.py status", interval_seconds = 60, timeout_seconds = 15 },
+]
+```
+
+Then `herdr server reload-config`. `status` fetches at most every 6 minutes and caches the
+result in `~/.local/state/herdr-quota/last.json`; the tab bar strips colors, so the line is
+plain text.
+
+## Sidebar mode (optional)
+
+Herdr metadata tokens are per-workspace, so showing quotas in the spaces sidebar means
+hanging them off a dedicated **Quota** mini-space (a workspace whose cwd is the plugin
+state dir, kept at the bottom of the list). If you prefer that:
+
+```bash
+herdr plugin action invoke start --plugin arnaud.quota   # daemon, refreshes every 2 min
+herdr plugin action invoke stop --plugin arnaud.quota    # clears tokens, closes the space
+```
 
 ```toml
 [ui.sidebar.spaces]
@@ -37,28 +51,16 @@ rows = [
   [{ token = "$q2_label", bold = true }, { token = "$q2_pct", fg = "#a6e3a1", bold = true }, { token = "$q2_reset", dim = true }],
   [{ token = "$q3_label", bold = true }, { token = "$q3_pct", fg = "#a6e3a1", bold = true }, { token = "$q3_reset", dim = true }],
 ]
-
-Inline tables must stay on one line (TOML 1.0). Add `{ token = "$q_icon" }` to a row for a provider glyph.
 ```
 
-On Herdr ≥ 0.9.0 the `%` tokens can change color with usage (`rules` are rejected by 0.8.x):
+Inline tables must stay on one line (TOML 1.0). On Herdr ≥ 0.9.0 the `%` tokens can change
+color with usage (0.8.x rejects `rules`):
 
 ```toml
 { token = "$q1_pct", fg = "#a6e3a1", bold = true, rules = [{ equals = "100%", fg = "#f38ba8" }, { starts_with = "9", fg = "#f38ba8" }, { starts_with = "8", fg = "#fab387" }, { starts_with = "7", fg = "#f9e2af" }] },
 ```
 
 (`starts_with` rather than `gt` because the value carries a `%`, which blocks numeric matching.)
-
-Then:
-
-```bash
-herdr server reload-config
-herdr plugin action invoke start --plugin arnaud.quota
-```
-
-The monitor keeps the **Quota** mini-space at the bottom of the spaces list and
-publishes the tokens only there, so the rows render once. It auto-starts on
-workspace/pane creation events and exits when the Herdr server goes away.
 
 ## Popup
 
@@ -69,7 +71,7 @@ type = "shell"
 command = '"$HERDR_BIN_PATH" plugin pane open --plugin arnaud.quota --entrypoint usage'
 ```
 
-## Tokens
+## Sidebar tokens
 
 | Token | Example |
 |---|---|
@@ -91,9 +93,10 @@ configured on this machine; raise `providers.RateLimited` on 429), and add it to
 
 | | |
 |---|---|
-| `herdr plugin action invoke start --plugin arnaud.quota` | start the monitor |
-| `herdr plugin action invoke refresh --plugin arnaud.quota` | fetch + publish once |
-| `herdr plugin action invoke stop --plugin arnaud.quota` | stop, clear tokens, close the mini-space |
+| `python3 quota.py status` | the tab-bar line |
+| `herdr plugin action invoke start --plugin arnaud.quota` | start the sidebar monitor |
+| `herdr plugin action invoke refresh --plugin arnaud.quota` | sidebar: fetch + publish once |
+| `herdr plugin action invoke stop --plugin arnaud.quota` | sidebar: stop, clear tokens, close the mini-space |
 | `herdr plugin pane open --plugin arnaud.quota --entrypoint usage` | detail popup |
 
 Requirements: Herdr ≥ 0.8.2, `python3` (stdlib only), macOS or Linux.
