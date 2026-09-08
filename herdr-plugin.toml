@@ -1,5 +1,5 @@
-id = "arnaud.quota"
-name = "AI quota"
+id = "quotabar.tabbar"
+name = "Quotabar"
 version = "0.1.0"
 min_herdr_version = "0.8.2"
 description = "AI plan quotas (Claude: 5h / 7d / per-model) as one compact line in the tab bar (or the spaces sidebar), plus a detail popup. Provider-pluggable."
@@ -7,26 +7,26 @@ platforms = ["macos", "linux"]
 
 [[actions]]
 id = "start"
-title = "AI quota: start sidebar monitor"
+title = "Quotabar: start sidebar monitor"
 contexts = ["workspace"]
 command = ["python3", "quota.py", "ensure"]
 
 [[actions]]
 id = "stop"
-title = "AI quota: stop sidebar monitor"
+title = "Quotabar: stop sidebar monitor"
 contexts = ["workspace"]
 command = ["python3", "quota.py", "stop"]
 
 [[actions]]
 id = "refresh"
-title = "AI quota: refresh now"
+title = "Quotabar: refresh now"
 contexts = ["workspace"]
 command = ["python3", "quota.py", "once"]
 
 
 [[panes]]
 id = "usage"
-title = "AI quota"
+title = "Quotabar"
 placement = "popup"
 width = "70%"
 height = "40%"

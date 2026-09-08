@@ -1,6 +1,6 @@
-# herdr-quota
+# herdr-quotabar
 
-AI plan quotas in the [Herdr](https://herdr.dev) tab bar, one compact line:
+Claude plan quotas as one compact line in the [Herdr](https://herdr.dev) tab bar (sidebar mode optional):
 
 ![the Herdr tab bar showing 5h 35% 24m | 7d 18% 3d21h | Fable 22% 3d21h](docs/tab-bar.png)
 
@@ -12,8 +12,8 @@ already stores on the machine). No extra login.
 ## Install
 
 ```bash
-herdr plugin install ArnaudRinquin/herdr-quota
-herdr plugin list --plugin arnaud.quota --json | grep plugin_root   # where quota.py landed
+herdr plugin install ArnaudRinquin/herdr-quotabar
+herdr plugin list --plugin quotabar.tabbar --json | grep plugin_root   # where quota.py landed
 ```
 
 (or `git clone` anywhere + `herdr plugin link <path>`.)
@@ -31,7 +31,7 @@ tab_bar_right = [
 Then `herdr server reload-config`. The tab bar strips colors, so the line is plain text.
 
 `status`, the popup and the sidebar daemon share one cache
-(`~/.local/state/herdr-quota/last.json`): at most one fetch every 5 minutes, whoever
+(`~/.local/state/herdr-quotabar/last.json`): at most one fetch every 5 minutes, whoever
 asks first. Anthropic's usage endpoint returns 429 quickly when polled harder; a 429 keeps
 the last good values on screen.
 
@@ -42,8 +42,8 @@ hanging them off a dedicated **Quota** mini-space (a workspace whose cwd is the 
 state dir, kept at the bottom of the list). If you prefer that:
 
 ```bash
-herdr plugin action invoke start --plugin arnaud.quota   # daemon, republishes every 5 min
-herdr plugin action invoke stop --plugin arnaud.quota    # clears tokens, closes the space
+herdr plugin action invoke start --plugin quotabar.tabbar   # daemon, republishes every 5 min
+herdr plugin action invoke stop --plugin quotabar.tabbar    # clears tokens, closes the space
 ```
 
 ```toml
@@ -69,13 +69,13 @@ color with usage (0.8.x rejects `rules`):
 ## Popup
 
 A floating pane with one bar per window, reset times, and the cache age. Open it with
-`herdr plugin pane open --plugin arnaud.quota --entrypoint usage`, or bind it:
+`herdr plugin pane open --plugin quotabar.tabbar --entrypoint usage`, or bind it:
 
 ```toml
 [[keys.command]]
 key = "prefix+u"
 type = "shell"
-command = '"$HERDR_BIN_PATH" plugin pane open --plugin arnaud.quota --entrypoint usage'
+command = '"$HERDR_BIN_PATH" plugin pane open --plugin quotabar.tabbar --entrypoint usage'
 ```
 
 ## Sidebar tokens
@@ -106,9 +106,9 @@ The Claude provider reads the OAuth token from the macOS Keychain item
 | | |
 |---|---|
 | `python3 quota.py status` | the tab-bar line |
-| `herdr plugin action invoke start --plugin arnaud.quota` | start the sidebar monitor |
-| `herdr plugin action invoke refresh --plugin arnaud.quota` | sidebar: fetch + publish once |
-| `herdr plugin action invoke stop --plugin arnaud.quota` | sidebar: stop, clear tokens, close the mini-space |
-| `herdr plugin pane open --plugin arnaud.quota --entrypoint usage` | detail popup |
+| `herdr plugin action invoke start --plugin quotabar.tabbar` | start the sidebar monitor |
+| `herdr plugin action invoke refresh --plugin quotabar.tabbar` | sidebar: fetch + publish once |
+| `herdr plugin action invoke stop --plugin quotabar.tabbar` | sidebar: stop, clear tokens, close the mini-space |
+| `herdr plugin pane open --plugin quotabar.tabbar --entrypoint usage` | detail popup |
 
 Requirements: Herdr ≥ 0.8.2, `python3` (stdlib only), macOS or Linux, Claude Code logged in on the same machine.

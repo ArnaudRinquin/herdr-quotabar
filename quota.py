@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""herdr-quota — AI plan quotas in the Herdr tab bar, one compact line.
+"""herdr-quotabar — AI plan quotas in the Herdr tab bar, one compact line.
 
   5h 28% 1h6m | 7d 17% 3d22h | Fable 20% 3d22h
 
@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from providers import RateLimited, load_all  # noqa: E402
 
-PLUGIN_ID = "arnaud.quota"
+PLUGIN_ID = "quotabar.tabbar"
 SOURCE = f"plugin:{PLUGIN_ID}"
 MAX_WINDOWS = 6
 INTERVAL_S = 300
@@ -36,7 +36,7 @@ TTL_MS = INTERVAL_S * 5 * 1000
 WS_LABEL = "Quota"
 
 HERDR = os.environ.get("HERDR_BIN_PATH", "herdr")
-STATE_DIR = os.environ.get("HERDR_PLUGIN_STATE_DIR") or os.path.expanduser("~/.local/state/herdr-quota")
+STATE_DIR = os.environ.get("HERDR_PLUGIN_STATE_DIR") or os.path.expanduser("~/.local/state/herdr-quotabar")
 SOCKET_PATH = os.environ.get("HERDR_SOCKET_PATH", "")
 PIDFILE = os.path.join(STATE_DIR, "monitor.pid")
 WS_ID_FILE = os.path.join(STATE_DIR, "workspace.id")
@@ -345,7 +345,7 @@ def cmd_popup():
     while True:
         cached, age, note = load_cached()
         sys.stdout.write("\033[2J\033[H")
-        print("\033[1m AI quotas\033[0m")
+        print("\033[1m Quotabar\033[0m")
         print()
         if not cached:
             print(f"  No data: {note or 'unknown error'}.")
