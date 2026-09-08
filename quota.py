@@ -14,6 +14,7 @@ Commands:
   once    fetch + publish a single time (manual refresh)
   stop    stop the monitor, clear tokens, close the mini-space we created
   popup   detail view for `herdr plugin pane open`
+  status  one plain-text line for ui.tab_bar_right command entries (reads the daemon cache)
 """
 import json
 import os
@@ -278,6 +279,33 @@ def cmd_stop():
         pass
 
 
+def cmd_status():
+    """`5h 33% 48m | 7d 18% 3d21h | Fable 22% 3d21h` from the cache the daemon writes (fetches if stale)."""
+    try:
+        stale = time.time() - os.path.getmtime(CACHE_FILE) > INTERVAL_S * 3
+        with open(CACHE_FILE) as f:
+            cached = json.load(f)
+    except Exception:
+        cached, stale = None, True
+    if stale:
+        try:
+            cached = [(p.NAME, w) for p, w in collect()]
+        except RateLimited:
+            pass
+    if not cached:
+        print("quota: n/a")
+        return
+    parts = []
+    for name, wins in cached:
+        for w in wins:
+            label = w["label"]
+            if len(cached) > 1 and label in ("5h", "7d"):
+                label = f"{name.capitalize()} {label}"
+            r = until(w.get("resets_at"))
+            parts.append(f"{label} {w['pct']}%" + (f" {r}" if r else ""))
+    print(" | ".join(parts))
+
+
 def bar(pct, width=30):
     filled = min(width, round(width * pct / 100))
     color = "\033[31m" if pct >= 90 else "\033[33m" if pct >= 70 else "\033[32m"
@@ -318,7 +346,7 @@ def cmd_popup():
 
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "ensure"
-    {"ensure": cmd_ensure, "daemon": cmd_daemon, "once": cmd_once,
+    {"ensure": cmd_ensure, "daemon": cmd_daemon, "once": cmd_once, "status": cmd_status,
      "stop": cmd_stop, "popup": cmd_popup}.get(cmd, cmd_ensure)()
 
 
