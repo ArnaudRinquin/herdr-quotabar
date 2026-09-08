@@ -31,7 +31,7 @@ from providers import RateLimited, load_all  # noqa: E402
 PLUGIN_ID = "arnaud.quota"
 SOURCE = f"plugin:{PLUGIN_ID}"
 MAX_WINDOWS = 6
-INTERVAL_S = 120
+INTERVAL_S = 300
 TTL_MS = INTERVAL_S * 5 * 1000
 WS_LABEL = "Quota"
 
@@ -115,19 +115,20 @@ def until(iso):
     return f"{m}m"
 
 
-def tokens(collected):
-    """Flatten windows into the $q tokens. Labels get a provider prefix only when >1 provider."""
-    toks = {"q_icon": "".join(p.ICON for p, _ in collected)}
-    multi = len(collected) > 1
+def tokens_from_cache(cached):
+    """Flatten [[provider_name, windows], ...] into the $q tokens. Labels get a provider prefix only when >1 provider."""
+    icons = {p.NAME: p.ICON for p in load_all()}
+    toks = {"q_icon": "".join(icons.get(name, "") for name, _ in cached)}
+    multi = len(cached) > 1
     i = 0
-    for prov, wins in collected:
+    for name, wins in cached:
         for w in wins:
             i += 1
             if i > MAX_WINDOWS:
                 break
             label = w["label"]
             if multi:
-                label = f"{prov.NAME.capitalize()} {label}" if label in ("5h", "7d") else label
+                label = f"{name.capitalize()} {label}" if label in ("5h", "7d") else label
             toks[f"q{i}_label"] = label
             toks[f"q{i}_pct"] = f"{w['pct']}%"
             toks[f"q{i}_reset"] = until(w.get("resets_at"))
@@ -226,15 +227,10 @@ def running_pid():
 
 def tick(state):
     workspaces = list_workspaces()
-    rate_limited = False
-    try:
-        collected = collect()
-        if collected:
-            state["toks"] = tokens(collected)
-            with open(CACHE_FILE, "w") as f:
-                json.dump([(p.NAME, w) for p, w in collected], f)
-    except RateLimited:
-        rate_limited = True
+    cached, _, note = load_cached()
+    rate_limited = note.startswith("rate-limited")
+    if cached:
+        state["toks"] = tokens_from_cache(cached)
     if state.get("toks"):
         target = ensure_quota_workspace(workspaces)
         if target:

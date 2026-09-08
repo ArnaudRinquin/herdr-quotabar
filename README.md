@@ -13,11 +13,13 @@ already stores on the machine). No extra login.
 
 ```bash
 herdr plugin install ArnaudRinquin/herdr-quota
-herdr plugin config-dir arnaud.quota   # prints the plugin root, used below
+herdr plugin list --plugin arnaud.quota --json | grep plugin_root   # where quota.py landed
 ```
 
+(or `git clone` anywhere + `herdr plugin link <path>`.)
+
 Add a command entry to the tab bar in `~/.config/herdr/config.toml` (Herdr ≥ 0.8.2),
-pointing at `quota.py` inside the plugin root (or a `git clone` + `herdr plugin link <path>`):
+pointing at `quota.py` inside that plugin root:
 
 ```toml
 [ui]
@@ -26,9 +28,12 @@ tab_bar_right = [
 ]
 ```
 
-Then `herdr server reload-config`. `status`, the popup and the sidebar daemon share one cache: at most one fetch every 5 minutes (the endpoint 429s fast), stored in
-`~/.local/state/herdr-quota/last.json`. The tab bar strips colors, so the line is
-plain text.
+Then `herdr server reload-config`. The tab bar strips colors, so the line is plain text.
+
+`status`, the popup and the sidebar daemon share one cache
+(`~/.local/state/herdr-quota/last.json`): at most one fetch every 5 minutes, whoever
+asks first. Anthropic's usage endpoint returns 429 quickly when polled harder; a 429 keeps
+the last good values on screen.
 
 ## Sidebar mode (optional)
 
@@ -37,7 +42,7 @@ hanging them off a dedicated **Quota** mini-space (a workspace whose cwd is the 
 state dir, kept at the bottom of the list). If you prefer that:
 
 ```bash
-herdr plugin action invoke start --plugin arnaud.quota   # daemon, refreshes every 2 min
+herdr plugin action invoke start --plugin arnaud.quota   # daemon, republishes every 5 min
 herdr plugin action invoke stop --plugin arnaud.quota    # clears tokens, closes the space
 ```
 
@@ -63,6 +68,9 @@ color with usage (0.8.x rejects `rules`):
 
 ## Popup
 
+A floating pane with one bar per window, reset times, and the cache age. Open it with
+`herdr plugin pane open --plugin arnaud.quota --entrypoint usage`, or bind it:
+
 ```toml
 [[keys.command]]
 key = "prefix+u"
@@ -80,13 +88,18 @@ command = '"$HERDR_BIN_PATH" plugin pane open --plugin arnaud.quota --entrypoint
 | `$q{i}_reset` | `1h6m`, `3d22h` — time until the window resets |
 
 `i` runs 1..6 across all providers, in provider order. Missing windows vanish from the row.
+Tokens carry a 25-minute TTL, so they disappear on their own if the daemon dies.
 
 ## Adding a provider
 
 Drop `providers/<name>.py` exposing `NAME`, `ICON` and `windows()` returning
 `[{"label": str, "pct": int, "resets_at": iso8601 | None}, ...]` (empty list when not
 configured on this machine; raise `providers.RateLimited` on 429), and add it to
-`load_all()` in `providers/__init__.py`.
+`load_all()` in `providers/__init__.py`. When more than one provider reports, the generic
+`5h` / `7d` labels get the provider name in front (`Claude 5h`).
+
+The Claude provider reads the OAuth token from the macOS Keychain item
+`Claude Code-credentials`, falling back to `~/.claude/.credentials.json` (Linux).
 
 ## Commands
 
@@ -98,4 +111,4 @@ configured on this machine; raise `providers.RateLimited` on 429), and add it to
 | `herdr plugin action invoke stop --plugin arnaud.quota` | sidebar: stop, clear tokens, close the mini-space |
 | `herdr plugin pane open --plugin arnaud.quota --entrypoint usage` | detail popup |
 
-Requirements: Herdr ≥ 0.8.2, `python3` (stdlib only), macOS or Linux.
+Requirements: Herdr ≥ 0.8.2, `python3` (stdlib only), macOS or Linux, Claude Code logged in on the same machine.
